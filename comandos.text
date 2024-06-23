@@ -1,0 +1,70 @@
+IMAGEN USADA: https://hub.docker.com/r/suhothayan/hadoop-spark-pig-hive
+
+docker cp /home/ale/tarea3/data.csv vigilant_napier:/root/dat.csv
+
+
+-------
+docker exec -it vigilant_napier /bin/bash
+
+hdfs dfs -mkdir -p /user/hadoop
+hdfs dfs -put /root/datt.csv /user/hadoop/
+hdfs dfs -ls /user/hadoop
+
+hive
+crear tabla:
+CREATE TABLE branch (
+    branch_addr STRING,
+    branch_type STRING,
+    taken INT,
+    target STRING
+)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+STORED AS TEXTFILE;
+cargar el csv:
+LOAD DATA INPATH '/user/hadoop/datt.csv' INTO TABLE branch;
+Consultas en hive:-----------------------------------------------------
+SELECT * FROM branch WHERE taken = 1;
+agrupar datos, calcular estadisticas y promedio:
+SELECT branch_type, COUNT(*) AS count, AVG(taken) AS avg_taken
+FROM branch
+GROUP BY branch_type;
+combinar operaciones:
+SELECT branch_type, COUNT(*) AS count, AVG(taken) AS avg_taken
+FROM branch
+WHERE taken = 1
+GROUP BY branch_type;
+
+consultas en pig: -----------------------------------------------
+pig -x mapreduce
+data = LOAD '/user/hadoop/datt.csv' USING PigStorage(',') AS (branch_addr:chararray, branch_type:chararray, taken:int, target:chararray);
+se limitan los datos porque sino se cae
+data_limited = LIMIT data 100;
+DUMP data_limited;
+filtrado de datos: 
+filtered_data = FILTER data_limited BY branch_type == 'conditional_jump';
+DUMP filtered_data;
+Consultas hive punto 5
+CREATE TABLE IF NOT EXISTS dataset (
+    branch_addr STRING,
+    branch_type STRING,
+    taken INT,
+    target STRING
+)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+STORED AS TEXTFILE;
+DISTRIBUCIÓN DE LOS BRANCH TIPES---
+SELECT branch_type, COUNT(*) AS count
+FROM dataset
+GROUP BY branch_type;
+FRECUENCIA DE LOS TAKEN -- 
+SELECT taken, COUNT(*) AS count
+FROM dataset
+GROUP BY taken;
+CORRELACIÓN ENTRE BRANCH Y TAKEN --- 
+SELECT branch_type, taken, COUNT(*) AS count
+FROM dataset
+GROUP BY branch_type, taken;
+
+
